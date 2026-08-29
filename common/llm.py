@@ -14,4 +14,24 @@ def get_openai_client() -> OpenAI:
 def chat(messages: list[dict[str, str]], **kwargs: Any) -> Any:
     client = kwargs.pop("client", None) or get_openai_client()
     model = kwargs.pop("model", settings.OLLAMA_MODEL)
-    return client.chat.completions.create(model=model, messages=messages, **kwargs)
+    response = client.chat.completions.create(model=model, messages=messages, **kwargs)
+    if kwargs.get("stream"):
+        return response
+
+    message = response.choices[0].message
+    result = {"response_content": message.content or ""}
+    extra_body = kwargs.get("extra_body") or {}
+    thinking_enabled = bool(
+        extra_body.get("think") or extra_body.get("thinking") or extra_body.get("reasoning")
+    )
+    if thinking_enabled:
+    # 1. Check Ollama's native property style
+    # 2. Fallback to Open-Source/vLLM convention (DeepSeek)
+    # 3. Fallback to Anthropic/UI convention
+        result["reasoning_content"] = (
+            getattr(message, "reasoning", None)          # Ollama standard
+            or getattr(message, "reasoning_content", None)  # vLLM / DeepSeek standard
+            or getattr(message, "thinking", None)         # Anthropic / Custom standard
+            or ""
+        )
+    return result

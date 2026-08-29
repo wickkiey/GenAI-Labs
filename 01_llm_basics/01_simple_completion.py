@@ -8,7 +8,7 @@ from common.llm import chat
 
 def main() -> None:
     resp = chat([{"role": "user", "content": "In one sentence, what is an LLM?"}])
-    print((resp.choices[0].message.content or "").strip())
+    print(resp["response_content"].strip())
 
 
 if __name__ == "__main__":

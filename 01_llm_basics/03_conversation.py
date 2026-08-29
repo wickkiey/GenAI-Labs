@@ -14,8 +14,8 @@ def main() -> None:
         if user_input.lower() in {"exit", "quit"}:
             break
         messages.append({"role": "user", "content": user_input})
-        resp = chat(messages, max_tokens=120)
-        reply = (resp.choices[0].message.content or "").strip()
+        resp = chat(messages, max_tokens=2000)
+        reply = resp["response_content"].strip()
         messages.append({"role": "assistant", "content": reply})
         print(f"Assistant: {reply}")
 

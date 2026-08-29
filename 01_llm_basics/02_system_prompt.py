@@ -16,8 +16,8 @@ PROMPTS = [
 def main() -> None:
     for prompt in PROMPTS:
         messages = [{"role": "system", "content": prompt}, {"role": "user", "content": QUESTION}]
-        resp = chat(messages, max_tokens=80)
-        print(f"\nSystem: {prompt}\n{(resp.choices[0].message.content or '').strip()}")
+        resp = chat(messages, max_tokens=2_000, extra_body={"think": False})
+        print(f"\nSystem: {prompt}\n{resp['response_content'].strip()}")
 
 
 if __name__ == "__main__":

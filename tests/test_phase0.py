@@ -29,5 +29,5 @@ def test_short_completion_non_empty() -> None:
     if not _ollama_available():
         pytest.skip("Ollama is not reachable at configured host")
     result = chat([{"role": "user", "content": "Reply with one word."}], max_tokens=5)
-    text = (result.choices[0].message.content or "").strip()
+    text = result["response_content"].strip()
     assert text

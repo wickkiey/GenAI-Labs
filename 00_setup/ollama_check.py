@@ -30,8 +30,17 @@ def main() -> None:
     models = [m.get("name", "") for m in tags.json().get("models", [])]
     print("Available models:", ", ".join(models) or "none")
 
-    res = chat([{"role": "user", "content": "Reply with one short greeting."}], max_tokens=12)
-    print("Sample completion:", (res.choices[0].message.content or "").strip())
+    # Enable thinking to inspect the reasoning trace separately from the final
+    # response. Use `think=False` in normal completion examples.
+    res = chat(
+        [{"role": "user", "content": "Reply with one short greeting."}],
+        max_tokens=256,
+        extra_body={"think": True},
+    )
+    reasoning = res["reasoning_content"].strip()
+    response = res["response_content"].strip()
+    print("Reasoning:", reasoning or "(not provided by this model/API)")
+    print("Response:", response or "(empty)")
 
 
 if __name__ == "__main__":

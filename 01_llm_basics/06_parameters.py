@@ -15,7 +15,7 @@ def ask(temp: float, max_tokens: int, seed: int) -> str:
         max_tokens=max_tokens,
         seed=seed,
     )
-    return (resp.choices[0].message.content or "").strip()
+    return resp["response_content"].strip()
 
 
 def main() -> None:

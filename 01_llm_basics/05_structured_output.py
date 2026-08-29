@@ -20,9 +20,9 @@ def main() -> None:
     resp = chat(
         [{"role": "user", "content": prompt}],
         response_format={"type": "json_schema", "json_schema": {"name": "person", "schema": schema}},
-        max_tokens=120,
+        max_tokens=2000,
     )
-    person = Person.model_validate_json(resp.choices[0].message.content or "{}")
+    person = Person.model_validate_json(resp["response_content"] or "{}")
     print(person.model_dump_json(indent=2))
 
 
