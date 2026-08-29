@@ -7,4 +7,4 @@
 - `05_structured_output.py`: requests JSON using a schema and validates it with Pydantic.
 - `06_parameters.py`: compares generation settings like temperature, max tokens, and seed.
 
-These scripts all use shared setup from `/home/runner/work/GenAI-Labs/GenAI-Labs/common/config.py` and `/home/runner/work/GenAI-Labs/GenAI-Labs/common/llm.py`.
+These scripts all use shared setup from `common/config.py` and `common/llm.py`.

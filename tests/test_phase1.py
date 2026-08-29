@@ -15,7 +15,7 @@ class Person(BaseModel):
 def _require_ollama() -> None:
     try:
         response = httpx.get(f"{settings.OLLAMA_HOST}/api/tags", timeout=2)
-    except httpx.HTTPError:
+    except httpx.TransportError:
         pytest.skip("Ollama is not reachable at configured host")
     if response.status_code != 200:
         pytest.skip("Ollama tag endpoint is unavailable")

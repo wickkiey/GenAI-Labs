@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import subprocess
+import sys
+from pathlib import Path
 
 import httpx
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from common.config import settings
 from common.llm import chat

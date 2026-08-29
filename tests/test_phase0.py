@@ -9,7 +9,7 @@ def _ollama_available() -> bool:
     try:
         response = httpx.get(f"{settings.OLLAMA_HOST}/api/tags", timeout=2)
         return response.status_code == 200
-    except httpx.HTTPError:
+    except httpx.TransportError:
         return False
 
 
