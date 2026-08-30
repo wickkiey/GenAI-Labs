@@ -1,0 +1,88 @@
+# Phase 7 Framework Dependencies
+
+# Base
+-r phase6.txt
+
+# Framework 7A - PydanticAI (START HERE)
+# pip install pydantic-ai
+# Very safe, minimal dependencies
+
+# Framework 7B - LangChain
+# pip install langchain langchain-community langchain-ollama
+# Large ecosystem, good compatibility
+
+# Framework 7C - LangGraph (RECOMMENDED)
+# pip install langgraph langchain langchain-community langchain-ollama
+# Graph-based, excellent for complex workflows
+
+# Framework 7D - Strands
+# pip install strands-agents strands-agents-tools
+# Focus on reliability and observability
+
+# Framework 7E - CrewAI
+# ⚠️ WARNING: May conflict with torch dependencies
+# pip freeze > requirements/snapshot_before_crewai.txt
+# pip install crewai crewai-tools
+# If conflicts: Use Docker container instead
+# Dockerfile and docker-compose.yml included
+
+# Framework 7F - AutoGen
+# ⚠️ IN MAINTENANCE MODE - Use autogen-agentchat (new API)
+# pip freeze > requirements/snapshot_before_autogen.txt
+# pip install autogen-agentchat autogen-ext[openai]
+# If conflicts: Use Docker container
+# Dockerfile and docker-compose.yml included
+
+# INSTALLATION INSTRUCTIONS:
+
+# 1. SAFE INSTALLATION (Do frameworks one at a time):
+#
+#    FOR EACH FRAMEWORK:
+#    1. Snapshot environment:
+#       pip freeze > requirements/snapshot_before_<framework>.txt
+#    
+#    2. Install framework:
+#       pip install <framework_deps>
+#    
+#    3. Verify torch:
+#       python -c "import torch; print(torch.__version__)"
+#    
+#    4. If torch breaks, rollback:
+#       pip install -r requirements/snapshot_before_<framework>.txt
+#    
+#    5. If rollback needed, use Docker for that framework
+
+# 2. DEPENDENCY CONFLICT RESOLUTION:
+#
+#    CrewAI and AutoGen may pin conflicting versions.
+#    
+#    Option A: Use Docker (recommended for conflicts)
+#    - docker-compose -f 06_frameworks/crewai/docker-compose.yml up
+#    - docker-compose -f 06_frameworks/autogen/docker-compose.yml up
+#    
+#    Option B: Isolated venv
+#    - conda create -n crewai_env python=3.11
+#    - conda activate crewai_env
+#    - pip install crewai crewai-tools
+#    - python 06_frameworks/crewai/01_agent.py
+#    - conda deactivate
+
+# 3. TESTING FRAMEWORKS:
+#
+#    Run framework directly:
+#    python 06_frameworks/<framework>/test_file.py
+#    
+#    Or run pytest:
+#    pytest tests/test_phase7.py::test_<framework> -v
+#    
+#    Compare all frameworks:
+#    pytest tests/test_phase7.py -v
+
+# 4. VERIFICATION CHECKLIST:
+#
+#    After each framework:
+#    - [ ] Framework executes without error
+#    - [ ] Returns valid Answer model
+#    - [ ] torch still works: python -c "import torch; print(torch.__version__)"
+#    - [ ] No dependency conflicts
+#    - [ ] Can revert with snapshot if needed
