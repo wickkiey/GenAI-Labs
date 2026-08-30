@@ -1,0 +1,4 @@
+GenAI Labs sandbox notes.
+
+This file lives in data/sandbox/ and is safe for the filesystem tool to read.
+The sandbox tool must never be able to read files outside this directory.

@@ -1,0 +1,3 @@
+The Model Context Protocol (MCP) standardizes how applications expose tools,
+resources, and prompts to AI applications. Servers can run over stdio or
+Streamable HTTP transports, and clients can connect to many servers at once.

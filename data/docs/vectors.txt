@@ -1,0 +1,3 @@
+Vector databases store embeddings and support nearest-neighbor search.
+They are commonly used to power retrieval-augmented generation (RAG) pipelines
+so an agent can search local knowledge instead of relying on the model alone.

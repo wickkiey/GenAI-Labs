@@ -1,0 +1,3 @@
+An agent is a system that uses an LLM to decide which actions to take,
+observes the results, and repeats until it can produce a final answer.
+Agents become useful once they are given tools to act on the world.
