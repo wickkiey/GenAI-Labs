@@ -613,6 +613,155 @@ Ship each with a `README.md` (architecture diagram + how to run) and a `docker-c
 
 ---
 
+## Section 12 — Agent Communication Protocols (A2A + ACP)
+
+This section is about how independent agents talk to one another, not how they call tools. Agent-to-agent communication is a coordination layer above the model itself.
+
+### 12.1 A2A example
+A2A (agent-to-agent) is usually a task handoff pattern: one agent delegates a sub-problem to another agent and expects a result or a structured response.
+
+```json
+{
+  "protocol": "A2A",
+  "message_id": "msg-101",
+  "from": "research-agent",
+  "to": "writer-agent",
+  "type": "task",
+  "payload": {
+    "task": "Summarize the findings from the sales report",
+    "context": "Use only the data in /data/sandbox/sales.csv",
+    "constraints": ["cite source rows", "keep under 200 words"]
+  },
+  "reply_to": null
+}
+```
+
+Typical A2A flow:
+1. One agent decides a subtask is better handled elsewhere.
+2. It packages context, constraints, and expected output.
+3. The recipient agent responds with a result or a request for clarification.
+
+### 12.2 ACP example
+ACP (Agent Communication Protocol) is a more explicit protocol for agent lifecycle and routing. It often includes identity, authorization, negotiation, and task execution metadata.
+
+```json
+{
+  "protocol": "ACP",
+  "conversation_id": "conv-42",
+  "sender": "planner-agent",
+  "receiver": "sql-agent",
+  "action": "delegate",
+  "task": "answer business question using the database",
+  "query": "How many employees are in Sales?",
+  "required_capabilities": ["sqlite", "reasoning"],
+  "timeout_ms": 15000,
+  "response_format": {
+    "type": "json",
+    "schema": "answer(value, reasoning, source_table)"
+  }
+}
+```
+
+Design rule: A2A is mostly about task exchange; ACP is more operational and protocol-oriented, with clearer agent metadata, routing, and lifecycle control.
+
+### 12.3 Lab exercise
+Build a tiny hand-written agent handoff:
+- `researcher` sends a brief to `writer`
+- `writer` returns an answer with a citation marker
+- `planner` delegates to `sql-agent` and waits for a structured response
+
+Compare these patterns against the Phase 8 multi-agent workflows and Phase 9 sub-agent orchestration.
+
+---
+
+## Section 13 — MCP Communication Examples
+
+MCP is not a peer-to-peer agent protocol. It is a standard way for an LLM agent to call tools exposed by an MCP server.
+
+### 13.1 Tool discovery example
+A client asks the MCP server for its tool list:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+```
+
+Example response:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "multiply",
+        "description": "Multiply two numbers",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "a": {"type": "number"},
+            "b": {"type": "number"}
+          },
+          "required": ["a", "b"]
+        }
+      }
+    ]
+  }
+}
+```
+
+### 13.2 Tool call example
+A client invokes a tool on the remote server:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "multiply",
+    "arguments": {"a": 1234, "b": 5678}
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [{
+      "type": "text",
+      "text": "7006652"
+    }],
+    "isError": false
+  }
+}
+```
+
+### 13.3 Practical learning target
+Use MCP for:
+- Calculator server
+- Filesystem server
+- SQLite server
+- Knowledge search server
+
+Use A2A/ACP for:
+- agent delegation
+- supervisor/worker routing
+- cross-agent negotiation
+- orchestration between separate agents
+
+The key mental model: MCP = tool protocol, A2A/ACP = agent protocol.
+
+---
+
 ## Recurring checklist per module
 
 Every single module you build:
