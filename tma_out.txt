@@ -1,0 +1,9 @@
+﻿============================= test session starts =============================
+collecting ... collected 8 items
+
+tests/test_multi_agent.py::test_trajectory_is_json_serialisable PASSED   [ 12%]
+tests/test_multi_agent.py::test_researcher_writer_handoff_carries_researched_facts_live FAILED [ 25%]
+tests/test_multi_agent.py::test_planner_executor_never_exceeds_max_turns PASSED [ 37%]
+tests/test_multi_agent.py::test_debate_runs_fixed_rounds_and_judge_picks_a_position PASSED [ 50%]
+tests/test_multi_agent.py::test_critique_loop_fixes_a_deliberately_wrong_first_answer PASSED [ 62%]
+tests/test_multi_agent.py::test_critique_loop_never_exceeds_max_rounds_on_persistent_error PASSED [ 75%]

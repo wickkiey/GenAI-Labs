@@ -1,0 +1,4 @@
+﻿============================= test session starts =============================
+collecting ... collected 8 items
+
+tests/test_multi_agent.py::test_trajectory_is_json_serialisable PASSED   [ 12%]

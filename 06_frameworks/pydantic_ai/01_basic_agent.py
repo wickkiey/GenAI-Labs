@@ -11,25 +11,29 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from pydantic_ai import Agent, ModelProvider
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from common.config import settings
 
 
 def main() -> None:
-    # Use Ollama model
+    # Use Ollama model via its OpenAI-compatible endpoint
     agent = Agent(
-        model=ModelProvider.via_url(
-            base_url=settings.OLLAMA_BASE_URL,
-            model_name=settings.OLLAMA_MODEL,
-            api_key=settings.OLLAMA_API_KEY,
+        model=OpenAIChatModel(
+            settings.OLLAMA_MODEL,
+            provider=OpenAIProvider(
+                base_url=settings.OLLAMA_BASE_URL,
+                api_key=settings.OLLAMA_API_KEY,
+            ),
         )
     )
 
     # Test question
     question = "What is 2 + 2?"
     result = agent.run_sync(question)
-    print(result.data)
+    print(result.output)
 
 
 if __name__ == "__main__":
