@@ -47,7 +47,7 @@
    │   ├── __init__.py
    │   ├── config.py            # loads .env, exposes MODEL, BASE_URL
    │   ├── llm.py               # get_openai_client(), get_ollama_client()
-   │   └── trace.py             # (filled in Phase 9)
+│   └── trace.py             # (filled in Phase 10)
    ├── 00_setup/
    └── tests/
    ```
@@ -381,7 +381,7 @@ pytest tests/test_frameworks.py -v -k pydantic_ai
 pytest tests/test_frameworks.py -v          # all frameworks
 ```
 
-Record per framework: accuracy, avg latency, avg tool calls, failures → write to `10_evaluation/results/frameworks.csv`.
+Record per framework: accuracy, avg latency, avg tool calls, failures → write to `09_observability/results/frameworks.csv`.
 
 Dependency-safety rule: **before installing each framework**, snapshot the env:
 ```powershell
@@ -420,11 +420,139 @@ pytest tests/test_multi_agent.py -v
 
 ---
 
-## Phase 9 — Memory & RAG
+## Phase 9 — Sub-Agents
 
-**Folders:** `08_memory/`, `09_rag/`
+**Folder:** `08_subagents/`
 
-### 9.1 Docker services
+The orchestrator/sub-agent pattern is different from Phase 8's peer-to-peer multi-agent patterns: here a **parent agent spawns isolated child agents** to handle bounded subtasks, gets back a result (not a running conversation), and decides what to do next. Think "delegate and collect", not "debate".
+
+### 9.1 Build
+
+1. `01_basic_subagent.py` — orchestrator spawns **one** subagent with a fresh, isolated `messages` history to solve a sub-task, returns only the final result to the parent (no history leaks back).
+2. `02_parallel_subagents.py` — orchestrator fans out **N** subagents concurrently (`asyncio.gather`) over independent subtasks, then merges results in the original order.
+3. `03_specialized_subagents.py` — role-specific subagents (`researcher`, `coder`, `reviewer`), each with its own system prompt and tool subset; orchestrator routes each subtask to the right one based on task type.
+4. `04_subagent_with_mcp.py` — each subagent owns its own MCP server connection (e.g. researcher → `search` MCP server, coder → `filesystem` MCP server).
+5. `05_recursive_subagents.py` — a subagent may itself spawn a subagent; enforce `max_depth=2` explicitly and pass depth down so recursion can't run away.
+6. `06_framework_subagents.py` — same pattern shown with a framework: LangGraph subgraph-as-node, plus one more of your choice (OpenAI Agents SDK handoffs, or CrewAI hierarchical process) — compare against the hand-written version.
+
+### 9.2 Test
+
+```powershell
+python 08_subagents/02_parallel_subagents.py
+pytest tests/test_subagents.py -v
+```
+Assertions:
+- orchestrator delegates to the correct subagent type for 5 sample tasks
+- parallel subagents return results in original request order despite finishing out of order
+- recursive delegation never exceeds `max_depth` (inject a task designed to recurse forever)
+- a subagent's internal history does **not** leak into the parent's message list (isolation)
+- an MCP-backed subagent recovers with a clear error if its server disconnects mid-task, no hang
+
+### 9.3 Exit check
+- [ ] You can explain sub-agent isolation vs Phase 8's peer multi-agent handoff
+- [ ] Recursive delegation is bounded and tested
+- [ ] `docs/concepts/subagents.md` compares this pattern to Phase 8's patterns
+
+---
+
+## Phase 10 — Observability & Tracing
+
+**Folder:** `09_observability/`
+
+Trace the same agent run through **four** popular tools so you learn the tradeoffs first-hand: **MLflow** (LLM tracing + experiment tracking), **Langfuse** (dedicated LLM observability, nested spans, UI), **Arize Phoenix** (OpenInference/OTel-native, built-in evals), and **OpenLLMetry / Traceloop** (vendor-neutral OpenTelemetry auto-instrumentation that can fan out to any OTLP backend).
+
+### 10.1 Docker services
+```yaml
+# infra/docker-compose.yml
+services:
+  mlflow:     # port 5000, tracking server (sqlite or postgres backend)
+  langfuse:   # port 3000, needs its own postgres + clickhouse
+  phoenix:    # port 6006, Arize Phoenix OTel collector + UI
+  otel-collector:  # port 4317/4318, optional shared OTLP fan-out
+```
+```powershell
+pip install mlflow langfuse arize-phoenix openinference-instrumentation-openai traceloop-sdk
+docker compose -f infra/docker-compose.yml up -d mlflow langfuse phoenix
+```
+
+### 10.2 Build
+
+1. `common/trace.py` — decorator `@traced` that captures the trajectory JSON per run into `09_observability/traces/*.jsonl`:
+   ```json
+   {"task":"...","framework":"langgraph","model":"qwen3:8b","tool_calls":[],
+    "steps":[],"final_answer":"...","latency_ms":0,"tokens":0,"success":true}
+   ```
+2. `01_mlflow_tracing.py` — `mlflow.openai.autolog()` (or manual `mlflow.trace`) around a Phase 2/6 agent run; log params/metrics/artifacts; view the trace + run in the MLflow UI.
+3. `02_langfuse_tracing.py` — wrap the same agent with the Langfuse SDK (`@observe` / `langfuse_context`), one nested span per LLM call and per tool call; view the trace tree in the Langfuse UI.
+4. `03_phoenix_tracing.py` — instrument with `openinference-instrumentation-openai` + Phoenix's OTel exporter; view spans and run a built-in eval (e.g. hallucination/QA correctness) in the Phoenix UI.
+5. `04_openllmetry_otel.py` — Traceloop SDK auto-instrumentation over OpenTelemetry; export to console **and** the local `otel-collector`, so traces are vendor-neutral and can be routed to any of the above backends without touching agent code.
+6. `05_compare_backends.py` — run one task once, trace it to all four backends simultaneously; note in `docs/comparisons/observability.md` the differences in setup cost, latency overhead, and UI usefulness.
+7. `datasets/` — 30 tasks: 10 calculator, 10 sqlite, 10 multi-hop, each with expected answer
+8. `evaluators/` — exact match, numeric tolerance, LLM-as-judge, tool-selection accuracy
+9. `runner.py` — run dataset × framework matrix, tracing every run to all backends → `results/*.csv`
+10. `report.py` — render a markdown comparison table
+
+### 10.3 Test
+```powershell
+python 09_observability/runner.py --framework all --dataset all
+pytest tests/test_observability.py -v
+```
+- evaluator unit tests with hand-written fixtures (no LLM)
+- trace files are valid JSONL, one line per run
+- MLflow run captures params/metrics without error
+- Langfuse trace tree has the expected span count for a 2-tool-call agent run
+- Phoenix span export succeeds against the local collector
+- OTel spans carry consistent trace/span ids across the LLM → tool boundary
+- runner is resumable (kill it mid-run, restart, no duplicate rows)
+
+### 10.4 Exit check
+- [ ] The same agent run is visible/traced in MLflow, Langfuse, and Phoenix, and via OpenTelemetry
+- [ ] One command produces a framework comparison table
+- [ ] `docs/comparisons/observability.md` compares the four tools
+
+---
+
+## Phase 11 — Feedback Loops & Agent Training
+
+**Folder:** `10_feedback_training/`
+
+Close the loop: turn Phase 10's traces and evaluation scores into something that actually improves the agent, using both a hand-written prompt-patch loop and **DSPy** for automated prompt/few-shot optimization.
+
+```powershell
+pip install dspy-ai
+```
+
+### 11.1 Build
+
+1. `01_human_feedback_capture.py` — capture a thumbs up/down + free-text correction per trace, stored alongside the Phase 10 trajectory (linked by trace id).
+2. `02_dspy_signatures.py` — express the Phase 2/6 task as a DSPy `Signature`/`Module` against the Ollama OpenAI-compatible endpoint; run a zero-shot baseline and record its score on the Phase 10 golden dataset.
+3. `03_dspy_optimize.py` — run a DSPy optimizer (`BootstrapFewShot`, then `MIPROv2`) using the golden dataset plus captured corrections as training examples; compare optimized vs baseline prompt on a held-out split.
+4. `04_prompt_feedback_loop.py` — hand-written alternative (no framework): failed/critiqued traces → auto-generate few-shot examples or a prompt patch → re-eval → keep the patch only if it improves the score (regression guard).
+5. `05_preference_dataset.py` — build a `(chosen, rejected)` pairs dataset from Phase 6/8 critique-loop outputs, in a standard DPO/RLHF format (document the format; actual fine-tuning is out of scope for local Ollama).
+6. `06_closed_loop_eval.py` — wire it together end-to-end: run eval → capture failures → optimize (DSPy or prompt-patch) → re-run eval → assert the score improved, fully automated and rerunnable.
+
+### 11.2 Test
+```powershell
+python 10_feedback_training/06_closed_loop_eval.py
+pytest tests/test_feedback_training.py -v
+```
+- DSPy-optimized program beats the zero-shot baseline on the held-out dataset by a set margin
+- prompt-feedback loop never keeps a patch that reduces the eval score (regression guard fires on a deliberately bad patch)
+- preference dataset entries are well-formed (`chosen != rejected`, same task id, both non-empty)
+- closed-loop script is idempotent — rerunning it doesn't duplicate results or regress the score
+
+### 11.3 Exit check
+- [ ] DSPy-optimized prompt measurably outperforms the baseline
+- [ ] a before/after score table or diagram exists for the closed loop
+- [ ] `docs/concepts/feedback_loops.md` documents what worked vs what didn't
+
+---
+
+## Phase 12 — Memory & RAG
+
+**Folders:** `11_memory/`, `12_rag/`
+
+### 12.1 Docker services
 ```yaml
 # infra/docker-compose.yml
 services:
@@ -435,7 +563,7 @@ services:
 docker compose -f infra/docker-compose.yml up -d chroma postgres
 ```
 
-### 9.2 Build
+### 12.2 Build
 **Memory**
 1. `short_term/` — message history + windowing + summarisation
 2. `state/` — LangGraph checkpointer (SQLite → Postgres)
@@ -452,7 +580,7 @@ docker compose -f infra/docker-compose.yml up -d chroma postgres
 
 Corpus: put 10–20 markdown/PDF docs in `data/corpus/`.
 
-### 9.3 Test
+### 12.3 Test
 ```powershell
 pytest tests/test_memory.py -v
 pytest tests/test_rag.py -v
@@ -463,50 +591,15 @@ pytest tests/test_rag.py -v
 - agentic RAG: skips retrieval for "What is 2+2?" (assert 0 retriever calls)
 - RAG answers cite a source doc id
 
-### 9.4 Exit check
+### 12.4 Exit check
 - [ ] Agentic RAG beats basic RAG on your golden set
 - [ ] Containers start/stop cleanly, data persists in a volume
 
 ---
 
-## Phase 10 — Evaluation & Tracing
+## Phase 13 — Capstone Projects
 
-**Folder:** `10_evaluation/`
-
-### 10.1 Docker (optional but recommended)
-```powershell
-docker compose -f infra/docker-compose.yml up -d langfuse
-```
-
-### 10.2 Build
-1. `common/trace.py` — decorator `@traced` that captures the trajectory JSON per run into `10_evaluation/traces/*.jsonl`:
-   ```json
-   {"task":"...","framework":"langgraph","model":"qwen3:8b","tool_calls":[],
-    "steps":[],"final_answer":"...","latency_ms":0,"tokens":0,"success":true}
-   ```
-2. `datasets/` — 30 tasks: 10 calculator, 10 sqlite, 10 multi-hop, each with expected answer
-3. `evaluators/` — exact match, numeric tolerance, LLM-as-judge, tool-selection accuracy
-4. `runner.py` — run dataset × framework matrix → `results/*.csv`
-5. `report.py` — render a markdown comparison table
-
-### 10.3 Test
-```powershell
-python 10_evaluation/runner.py --framework all --dataset all
-pytest tests/test_evaluation.py -v
-```
-- evaluator unit tests with hand-written fixtures (no LLM)
-- trace files are valid JSONL and one line per run
-- runner is resumable (kill it mid-run, restart, no duplicate rows)
-
-### 10.4 Exit check
-- [ ] One command produces a framework comparison table
-- [ ] Traces visible in Langfuse (if enabled)
-
----
-
-## Phase 11 — Capstone Projects
-
-**Folder:** `11_projects/`
+**Folder:** `13_projects/`
 
 | Project | Build | Test |
 | --- | --- | --- |
@@ -548,4 +641,7 @@ Every single module you build:
 | 5 | 7A–7D |
 | 6 | 7E–7F, 8 |
 | 7 | 9 |
-| 8 | 10, 11 |
+| 8 | 10 |
+| 9 | 11 |
+| 10 | 12 |
+| 11 | 13 |

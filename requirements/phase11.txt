@@ -1,0 +1,7 @@
+# Phase 11 Feedback Loops & Agent Training Dependencies
+
+# Base
+-r phase10.txt
+
+# Optional -- code degrades to "dspy not installed, skipping" if missing.
+# pip install dspy-ai

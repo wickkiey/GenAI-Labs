@@ -1,0 +1,8 @@
+# Phase 9 Sub-Agents Dependencies
+
+# Base
+-r phase7.txt
+
+# Uses the same MCP SDK from Phase 4/5 and the tool registry from Phase 3.
+# 06_framework_subagents.py additionally needs (already listed in phase7.txt):
+#   langgraph langchain-community langchain-ollama

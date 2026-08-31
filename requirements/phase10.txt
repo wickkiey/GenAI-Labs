@@ -1,0 +1,13 @@
+# Phase 10 Observability Dependencies
+
+# Base
+-r phase9.txt
+
+# Uncomment what you want to try -- all four are optional; the tracing
+# scripts degrade to a "not installed, skipping" message if a package is
+# missing, so torchenv stays clean by default.
+# pip install mlflow
+# pip install langfuse
+# pip install arize-phoenix openinference-instrumentation-openai
+# pip install traceloop-sdk
+
