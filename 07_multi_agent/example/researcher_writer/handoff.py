@@ -9,7 +9,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from common.config import settings
@@ -25,7 +25,7 @@ MultiToolAgent = import_module("03_tools.tool_agent").MultiToolAgent
 RESEARCHER_TOOLS = ["list_tables", "describe_table", "query_database"]
 
 
-def run_researcher_writer(question: str, max_iterations: int = 4) -> Trajectory:
+def run_researcher_writer(question: str, max_iterations: int = 6) -> Trajectory:
     """Researcher retrieves facts via tools -> Writer composes the final answer from them."""
     trajectory = Trajectory()
 

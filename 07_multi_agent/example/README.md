@@ -1,15 +1,13 @@
-# Phase 8: Multi-Agent Patterns
+# Phase 8 Example: Hand-Written Multi-Agent Patterns
 
 Four hand-written multi-agent patterns built on the Phase 2 chat helper
 (`common/llm.chat`) and the Phase 3 tool registry (`03_tools/tool_agent.py`,
 `03_tools/tools/`). Each pattern returns a `Trajectory` (`steps`, `tool_calls`,
 `iterations`, `final`) from `trajectory.py`, same contract as Phase 6.
 
-No new framework installs are required - `torchenv` currently ships
-`pydantic-ai` and `autogen-agentchat` (from Phase 7) but not `langgraph`,
-`langchain`, or `crewai`, so these patterns are implemented directly against
-the local Ollama model to stay dependency-safe. Swapping in a framework later
-is a drop-in exercise since the `Trajectory` contract stays the same.
+This is the framework-free reference implementation - see `../README.md` for
+the same 4 patterns re-implemented per framework (PydanticAI, AutoGen,
+LangGraph, LangChain, CrewAI, Strands).
 
 | Folder | Pattern | Stop condition |
 | --- | --- | --- |
@@ -21,12 +19,13 @@ is a drop-in exercise since the `Trajectory` contract stays the same.
 Run:
 
 ```powershell
-python 07_multi_agent/researcher_writer/handoff.py "Which department has the highest total sales, and by how much?"
-python 07_multi_agent/planner_executor/supervisor.py "How many rows are in employees, times 12?"
-python 07_multi_agent/debate/debate.py
-python 07_multi_agent/critique_loop/critique_loop.py "What is 1234 * 5678?"
+python 07_multi_agent/example/researcher_writer/handoff.py "Which department has the highest total sales, and by how much?"
+python 07_multi_agent/example/planner_executor/supervisor.py "How many rows are in employees, times 12?"
+python 07_multi_agent/example/debate/debate.py
+python 07_multi_agent/example/critique_loop/critique_loop.py "What is 1234 * 5678?"
 pytest tests/test_multi_agent.py -v
 ```
+
 
 ## Notes
 

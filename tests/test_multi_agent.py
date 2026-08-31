@@ -8,11 +8,11 @@ import pytest
 
 from common.config import settings
 
-trajectory_module = importlib.import_module("07_multi_agent.trajectory")
-handoff_module = importlib.import_module("07_multi_agent.researcher_writer.handoff")
-supervisor_module = importlib.import_module("07_multi_agent.planner_executor.supervisor")
-debate_module = importlib.import_module("07_multi_agent.debate.debate")
-critique_loop_module = importlib.import_module("07_multi_agent.critique_loop.critique_loop")
+trajectory_module = importlib.import_module("07_multi_agent.example.trajectory")
+handoff_module = importlib.import_module("07_multi_agent.example.researcher_writer.handoff")
+supervisor_module = importlib.import_module("07_multi_agent.example.planner_executor.supervisor")
+debate_module = importlib.import_module("07_multi_agent.example.debate.debate")
+critique_loop_module = importlib.import_module("07_multi_agent.example.critique_loop.critique_loop")
 
 
 def _require_ollama() -> None:
